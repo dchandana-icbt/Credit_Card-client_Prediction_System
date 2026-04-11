@@ -1,0 +1,42 @@
+import pandas as pd
+
+# Load the two datasets
+df1 = pd.read_csv("/Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/raw/Credit_Card_Dataset_2025_Sept_1.csv")
+df2 = pd.read_csv("/Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/raw/Credit_Card_Dataset_2025_Sept_2.csv")
+
+# Display basic information
+print("Dataset 1 shape:", df1.shape)
+print("Dataset 2 shape:", df2.shape)
+
+print("\nDataset 1 columns:")
+print(df1.columns)
+
+print("\nDataset 2 columns:")
+print(df2.columns)
+
+# Check uniqueness of primary key columns
+print("\nUnique IDs in Dataset 1:", df1["ID"].nunique())
+print("Unique Users in Dataset 2:", df2["User"].nunique())
+
+# Rename 'User' to 'ID' for consistency
+df2 = df2.rename(columns={"User": "ID"})
+
+# Merge the datasets using the common primary key
+merged_df = pd.merge(df1, df2, on="ID", how="inner")
+
+# Drop unnecessary index column if present
+if "Unnamed: 0" in merged_df.columns:
+    merged_df = merged_df.drop(columns=["Unnamed: 0"])
+
+# Display merged dataset details
+print("\nMerged dataset shape:", merged_df.shape)
+print("\nMerged dataset columns:")
+print(merged_df.columns)
+
+# Check for duplicate IDs after merge
+print("\nDuplicate IDs after merge:", merged_df["ID"].duplicated().sum())
+
+# Save merged dataset
+merged_df.to_csv("/Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/interim/Merged_Credit_Card_Dataset.csv", index=False)
+
+print("\nMerged dataset saved successfully.")
