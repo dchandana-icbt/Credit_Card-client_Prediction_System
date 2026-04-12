@@ -1,8 +1,12 @@
 import pandas as pd
+from pathlib import Path
 
-# Load the two datasets
-df1 = pd.read_csv("/Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/raw/Credit_Card_Dataset_2025_Sept_1.csv")
-df2 = pd.read_csv("/Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/raw/Credit_Card_Dataset_2025_Sept_2.csv")
+# Get the project root directory (assuming this script is in src/ml_project/)
+project_root = Path(__file__).parent.parent.parent
+
+# Load the two datasets using relative paths
+df1 = pd.read_csv(project_root / "data" / "raw" / "Credit_Card_Dataset_2025_Sept_1.csv")
+df2 = pd.read_csv(project_root / "data" / "raw" / "Credit_Card_Dataset_2025_Sept_2.csv")
 
 # Display basic information
 print("Dataset 1 shape:", df1.shape)
@@ -37,6 +41,6 @@ print(merged_df.columns)
 print("\nDuplicate IDs after merge:", merged_df["ID"].duplicated().sum())
 
 # Save merged dataset
-merged_df.to_csv("/Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/interim/Merged_Credit_Card_Dataset.csv", index=False)
+merged_df.to_csv(project_root / "data" / "interim" / "Merged_Credit_Card_Dataset.csv", index=False)
 
 print("\nMerged dataset saved successfully.")
