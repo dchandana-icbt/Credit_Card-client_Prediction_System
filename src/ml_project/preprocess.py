@@ -1,10 +1,13 @@
 import os
 from pathlib import Path
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 # Get the project root directory (assuming this script is in src/ml_project/)
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -15,14 +18,27 @@ project_root = Path(__file__).resolve().parent.parent.parent
 INPUT_FILE = project_root / "data" / "interim" / "Merged_Credit_Card_Dataset.csv"
 OUTPUT_DIR = project_root / "reports" / "data_preprocessing"
 PROCESSED_DIR = project_root / "data" / "processed"
+SPLIT_DIR = PROCESSED_DIR / "splits"
 CHARTS_DIR = OUTPUT_DIR / "charts"
 REPORT_FILE = OUTPUT_DIR / "eda_report.txt"
 FINAL_CLEAN_FILE = PROCESSED_DIR / "Final_Cleaned_Credit_Card_Dataset.csv"
 MODEL_BASE_FILE = PROCESSED_DIR / "Model_Ready_Base_Credit_Card_Dataset.csv"
 MODEL_ENCODED_FILE = PROCESSED_DIR / "Model_Ready_Encoded_Credit_Card_Dataset.csv"
 
+# Train/test split outputs
+X_TRAIN_FILE = SPLIT_DIR / "X_train.csv"
+X_TEST_FILE = SPLIT_DIR / "X_test.csv"
+Y_TRAIN_FILE = SPLIT_DIR / "y_train.csv"
+Y_TEST_FILE = SPLIT_DIR / "y_test.csv"
+
+# Normalized train/test split outputs
+X_TRAIN_NORMALIZED_FILE = SPLIT_DIR / "X_train_normalized.csv"
+X_TEST_NORMALIZED_FILE = SPLIT_DIR / "X_test_normalized.csv"
+SCALER_FILE = SPLIT_DIR / "minmax_scaler.pkl"
+
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+SPLIT_DIR.mkdir(parents=True, exist_ok=True)
 CHARTS_DIR.mkdir(parents=True, exist_ok=True)
 
 sns.set(style="whitegrid")
@@ -49,7 +65,7 @@ df = pd.read_csv(INPUT_FILE)
 raw_df = df.copy()
 
 # =========================================================
-# BASIC INFORMATION
+# ABOUT DATA
 # =========================================================
 n_rows, n_cols = df.shape
 duplicate_rows = int(df.duplicated().sum())
@@ -57,9 +73,16 @@ duplicate_ids = int(df["ID"].duplicated().sum()) if "ID" in df.columns else 0
 missing_values = df.isnull().sum()
 unique_values = df.nunique()
 
-# Identify numerical and categorical columns
 numerical_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+
+# Save data overview artifacts similar to notebook-style inspection
+raw_df.head(10).to_csv(OUTPUT_DIR / "dataset_head.csv", index=False)
+missing_values.rename("missing_count").to_csv(OUTPUT_DIR / "missing_values_before_cleaning.csv")
+unique_values.rename("unique_values").to_csv(OUTPUT_DIR / "unique_values_before_cleaning.csv")
+pd.DataFrame(
+    {"column": df.columns, "dtype": [str(df[col].dtype) for col in df.columns]}
+).to_csv(OUTPUT_DIR / "data_types.csv", index=False)
 
 # =========================================================
 # TARGET DISTRIBUTION
@@ -91,7 +114,7 @@ if categorical_cols:
     df.describe(include=["object", "category"]).T.to_csv(OUTPUT_DIR / "categorical_summary.csv")
 
 # =========================================================
-# PREPROCESSING FOR EDA / CLEAN DATASET
+# DATA PRE-PROCESSING FOR EDA / CLEAN DATASET
 # =========================================================
 
 # 1. Drop constant columns
@@ -117,7 +140,6 @@ removed_duplicate_rows = before_dedup - len(df)
 
 # 4. Feature engineering
 if all(col in df.columns for col in ["WORK_PHONE", "PHONE"]):
-    # E_MAIL may have been dropped already if it is constant
     email_component = df["E_MAIL"] if "E_MAIL" in df.columns else 0
     df["TOTAL_CONTACTS"] = df["WORK_PHONE"] + df["PHONE"] + email_component
 
@@ -151,6 +173,11 @@ for col in df.select_dtypes(include=[np.number]).columns:
         outlier_columns.append(col)
         cap_outliers_iqr(df, col)
 
+# Save post-cleaning missing values too
+df.isnull().sum().rename("missing_count_after_cleaning").to_csv(
+    OUTPUT_DIR / "missing_values_after_cleaning.csv"
+)
+
 # Clean dataset for analysis/reporting
 final_clean_df = df.copy()
 final_clean_df.to_csv(FINAL_CLEAN_FILE, index=False)
@@ -162,11 +189,11 @@ model_df = final_clean_df.copy()
 
 # Remove non-predictive and redundant columns for modelling
 model_drop_columns = [
-    "ID",           # identifier only
-    "E_MAIL",       # often constant / non-informative here
-    "CAR",          # redundant with HAS_CAR
-    "REALITY",      # redundant with HAS_PROPERTY
-    "INCOME_BAND",  # redundant with INCOME for the first modelling baseline
+    "ID",
+    "E_MAIL",
+    "CAR",
+    "REALITY",
+    "INCOME_BAND",
 ]
 existing_model_drop_columns = [col for col in model_drop_columns if col in model_df.columns]
 if existing_model_drop_columns:
@@ -180,6 +207,49 @@ encoded_df = model_df.copy()
 encoded_categorical_cols = encoded_df.select_dtypes(include=["object", "category"]).columns.tolist()
 encoded_df = pd.get_dummies(encoded_df, columns=encoded_categorical_cols, drop_first=True)
 encoded_df.to_csv(MODEL_ENCODED_FILE, index=False)
+
+# =========================================================
+# TRAIN TEST SPLIT
+# =========================================================
+X = encoded_df.drop(columns=["TARGET"])
+y = encoded_df["TARGET"].astype(int)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    stratify=y,
+    random_state=1,
+)
+
+# Save raw train/test splits
+X_train.to_csv(X_TRAIN_FILE, index=False)
+X_test.to_csv(X_TEST_FILE, index=False)
+y_train.to_csv(Y_TRAIN_FILE, index=False)
+y_test.to_csv(Y_TEST_FILE, index=False)
+
+train_target_distribution = y_train.value_counts(normalize=True).sort_index() * 100
+test_target_distribution = y_test.value_counts(normalize=True).sort_index() * 100
+
+# =========================================================
+# DATA NORMALIZATION
+# =========================================================
+# Apply Min-Max normalization on numeric feature columns using only the training set fit.
+# TARGET is not part of X, so only features are normalized.
+scaler = MinMaxScaler()
+
+numeric_feature_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
+# All encoded features are numeric. This normalization is safe for direct modelling pipelines.
+X_train_normalized = X_train.copy()
+X_test_normalized = X_test.copy()
+
+X_train_normalized[numeric_feature_cols] = scaler.fit_transform(X_train[numeric_feature_cols])
+X_test_normalized[numeric_feature_cols] = scaler.transform(X_test[numeric_feature_cols])
+
+# Save normalized train/test sets and scaler
+X_train_normalized.to_csv(X_TRAIN_NORMALIZED_FILE, index=False)
+X_test_normalized.to_csv(X_TEST_NORMALIZED_FILE, index=False)
+joblib.dump(scaler, SCALER_FILE)
 
 # =========================================================
 # ANALYSIS TABLES
@@ -308,12 +378,14 @@ plt.close()
 # TEXT REPORT
 # =========================================================
 with open(REPORT_FILE, "w", encoding="utf-8") as f:
-    f.write("TASK 2 - EDA, PREPROCESSING, AND MODEL-READY DATA REPORT\n")
-    f.write("=" * 70 + "\n\n")
+    f.write("TASK 2 - EDA, PREPROCESSING, TRAIN/TEST SPLIT, AND NORMALIZATION REPORT\n")
+    f.write("=" * 80 + "\n\n")
 
-    f.write("1. BASIC DATASET INFORMATION\n")
+    f.write("1. ABOUT DATA\n")
     f.write(f"Rows: {n_rows}\n")
     f.write(f"Columns: {n_cols}\n")
+    f.write(f"Numerical Columns: {len(numerical_cols)}\n")
+    f.write(f"Categorical Columns: {len(categorical_cols)}\n")
     f.write(f"Duplicate Rows Before Cleaning: {duplicate_rows}\n")
     f.write(f"Duplicate IDs Before Cleaning: {duplicate_ids}\n")
     f.write(f"Duplicate Rows Removed: {removed_duplicate_rows}\n\n")
@@ -325,25 +397,12 @@ with open(REPORT_FILE, "w", encoding="utf-8") as f:
         f.write(f"Class imbalance ratio (majority/minority): {class_imbalance_ratio:.2f}:1\n")
     f.write("\n")
 
-    f.write("3. MISSING VALUES (BEFORE CLEANING)\n")
+    f.write("3. CHECKING MISSING VALUES (BEFORE CLEANING)\n")
     for col, val in missing_values.items():
         f.write(f"{col}: {val}\n")
     f.write("\n")
 
-    f.write("4. UNIQUE VALUES (BEFORE CLEANING)\n")
-    for col, val in unique_values.items():
-        f.write(f"{col}: {val}\n")
-    f.write("\n")
-
-    f.write("5. CONSTANT COLUMNS DROPPED\n")
-    if constant_columns:
-        for col in constant_columns:
-            f.write(f"- {col}\n")
-    else:
-        f.write("No constant columns found.\n")
-    f.write("\n")
-
-    f.write("6. PREPROCESSING PERFORMED\n")
+    f.write("4. DATA PRE-PROCESSING PERFORMED\n")
     f.write("- Missing categorical values filled with mode.\n")
     f.write("- Missing numerical values filled with median.\n")
     f.write("- Duplicate rows removed.\n")
@@ -351,15 +410,33 @@ with open(REPORT_FILE, "w", encoding="utf-8") as f:
     f.write("- New features created: TOTAL_CONTACTS, HAS_CAR, HAS_PROPERTY, INCOME_BAND, INCOME_PER_PERSON, CHILD_RATIO.\n")
     f.write("- Clean analysis file saved.\n")
     f.write("- Model-ready base file saved with redundant/non-predictive columns removed.\n")
-    f.write("- Encoded model-ready file saved for Logistic Regression and XGBoost.\n\n")
+    f.write("- Encoded model-ready file saved for machine learning.\n\n")
 
-    f.write("7. MODEL-READY COLUMN CHANGES\n")
+    f.write("5. MODEL-READY COLUMN CHANGES\n")
     if existing_model_drop_columns:
         for col in existing_model_drop_columns:
             f.write(f"- Dropped from model dataset: {col}\n")
     else:
         f.write("No model-specific columns were dropped.\n")
     f.write("\n")
+
+    f.write("6. TRAIN TEST SPLIT\n")
+    f.write(f"X_train shape: {X_train.shape}\n")
+    f.write(f"X_test shape: {X_test.shape}\n")
+    f.write(f"y_train shape: {y_train.shape}\n")
+    f.write(f"y_test shape: {y_test.shape}\n")
+    f.write("Training target distribution (%):\n")
+    for idx, value in train_target_distribution.items():
+        f.write(f"  TARGET = {idx}: {value:.3f}%\n")
+    f.write("Test target distribution (%):\n")
+    for idx, value in test_target_distribution.items():
+        f.write(f"  TARGET = {idx}: {value:.3f}%\n")
+    f.write("\n")
+
+    f.write("7. DATA NORMALIZATION\n")
+    f.write("- MinMaxScaler fitted on training data only.\n")
+    f.write(f"- Number of normalized feature columns: {len(numeric_feature_cols)}\n")
+    f.write(f"- Scaler saved to: {SCALER_FILE}\n\n")
 
     f.write("8. NUMERICAL MEAN VALUES BY TARGET\n")
     f.write(group_means.to_string())
@@ -374,6 +451,12 @@ with open(REPORT_FILE, "w", encoding="utf-8") as f:
     f.write(f"- Clean analysis dataset: {FINAL_CLEAN_FILE}\n")
     f.write(f"- Model-ready base dataset: {MODEL_BASE_FILE}\n")
     f.write(f"- Model-ready encoded dataset: {MODEL_ENCODED_FILE}\n")
+    f.write(f"- X_train: {X_TRAIN_FILE}\n")
+    f.write(f"- X_test: {X_TEST_FILE}\n")
+    f.write(f"- y_train: {Y_TRAIN_FILE}\n")
+    f.write(f"- y_test: {Y_TEST_FILE}\n")
+    f.write(f"- X_train_normalized: {X_TRAIN_NORMALIZED_FILE}\n")
+    f.write(f"- X_test_normalized: {X_TEST_NORMALIZED_FILE}\n")
     f.write(f"- EDA report: {REPORT_FILE}\n")
     f.write(f"- Charts folder: {CHARTS_DIR}\n")
 
@@ -381,5 +464,12 @@ print("Task 2 preprocessing completed successfully.")
 print(f"Clean analysis dataset saved to: {FINAL_CLEAN_FILE}")
 print(f"Model-ready base dataset saved to: {MODEL_BASE_FILE}")
 print(f"Model-ready encoded dataset saved to: {MODEL_ENCODED_FILE}")
+print(f"X_train saved to: {X_TRAIN_FILE}")
+print(f"X_test saved to: {X_TEST_FILE}")
+print(f"y_train saved to: {Y_TRAIN_FILE}")
+print(f"y_test saved to: {Y_TEST_FILE}")
+print(f"Normalized X_train saved to: {X_TRAIN_NORMALIZED_FILE}")
+print(f"Normalized X_test saved to: {X_TEST_NORMALIZED_FILE}")
+print(f"Scaler saved to: {SCALER_FILE}")
 print(f"EDA report saved to: {REPORT_FILE}")
 print(f"Charts saved in: {CHARTS_DIR}")
