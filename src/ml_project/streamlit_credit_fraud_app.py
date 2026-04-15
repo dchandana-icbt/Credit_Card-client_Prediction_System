@@ -299,5 +299,5 @@ with col2:
 
 st.markdown("---")
 st.markdown(
-    "This app is designed to behave similarly to your sample Shiny app, but implemented in Streamlit for your trained credit-card fraud models."
+    "This app Streamlit allows a user to enter a new client’s profile through a sidebar form, including demographic, financial, family, housing, employment, and contact-related details, then uses the saved machine learning models to estimate the probability that the client may become fraudulent. The UI is arranged with a client-input panel on the left and a model-output section on the right, which makes it similar in interaction style to your sample Shiny app."
 )
