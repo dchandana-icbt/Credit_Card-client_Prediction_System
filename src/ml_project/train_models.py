@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import joblib
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -22,7 +23,7 @@ from sklearn.neural_network import MLPClassifier
 project_root = Path(__file__).resolve().parent.parent.parent
 
 SPLITS_DIR = project_root / "data" / "processed" / "splits"
-OUTPUT_DIR = project_root / "reports" / "model_results_v2"
+OUTPUT_DIR = project_root / "reports" / "model_results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Logistic Regression and ANN use normalized data
@@ -142,6 +143,7 @@ log_model = LogisticRegression(
     class_weight="balanced"
 )
 log_model.fit(X_train_norm, y_train)
+joblib.dump(log_model, OUTPUT_DIR / "logistic_regression_model.pkl")
 
 y_pred_log = log_model.predict(X_test_norm)
 y_proba_log = log_model.predict_proba(X_test_norm)[:, 1]
@@ -177,6 +179,7 @@ ann_model = MLPClassifier(
     random_state=42
 )
 ann_model.fit(X_train_norm, y_train)
+joblib.dump(ann_model, OUTPUT_DIR / "ann_model.pkl")
 
 y_pred_ann = ann_model.predict(X_test_norm)
 y_proba_ann = ann_model.predict_proba(X_test_norm)[:, 1]
@@ -215,6 +218,7 @@ print(ann_report_text)
 #     random_state=42
 # )
 # xgb_model.fit(X_train, y_train)
+# joblib.dump(xgb_model, OUTPUT_DIR / "xgboost_model.pkl")
 
 # y_pred_xgb = xgb_model.predict(X_test)
 # y_proba_xgb = xgb_model.predict_proba(X_test)[:, 1]
@@ -246,23 +250,21 @@ print(ann_report_text)
 # =========================================================
 # final_results = pd.concat([results_log, results_ann, results_xgb], ignore_index=True)
 final_results = pd.concat([results_log, results_ann], ignore_index=True)
+
 final_results.to_csv(OUTPUT_DIR / "model_comparison_results.csv", index=False)
 
 print("\nFinal Model Comparison")
 print(final_results)
 
-# Comparison chart
-plt.figure(figsize=(10, 6))
 comparison_plot = final_results.set_index("Model")[["Accuracy", "Precision", "Recall", "F1 Score", "ROC-AUC"]]
-comparison_plot.plot(kind="bar")
-plt.title("Model Performance Comparison")
-plt.ylabel("Score")
-plt.xticks(rotation=0)
+ax = comparison_plot.plot(kind="bar", figsize=(10, 6))
+ax.set_title("Model Performance Comparison")
+ax.set_ylabel("Score")
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
 plt.tight_layout()
 plt.savefig(OUTPUT_DIR / "model_comparison_chart.png")
 plt.close()
 
-# Report-ready paragraph
 comparison_paragraph = build_report_paragraph(final_results)
 
 with open(OUTPUT_DIR / "report_ready_model_comparison_paragraph.txt", "w", encoding="utf-8") as f:
@@ -272,3 +274,7 @@ print("\nReport-ready comparison paragraph:\n")
 print(comparison_paragraph)
 
 print(f"\nAll results saved successfully in: {OUTPUT_DIR}")
+print("Saved model files:")
+print(f"- {OUTPUT_DIR / 'logistic_regression_model.pkl'}")
+print(f"- {OUTPUT_DIR / 'ann_model.pkl'}")
+print(f"- {OUTPUT_DIR / 'xgboost_model.pkl'}")
