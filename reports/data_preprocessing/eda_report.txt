@@ -1,0 +1,108 @@
+TASK 2 - EDA, PREPROCESSING, TRAIN/TEST SPLIT, AND NORMALIZATION REPORT
+================================================================================
+
+1. ABOUT DATA
+Rows: 25134
+Columns: 19
+Numerical Columns: 12
+Categorical Columns: 7
+Duplicate Rows Before Cleaning: 0
+Duplicate IDs Before Cleaning: 0
+Duplicate Rows Removed: 0
+
+2. TARGET DISTRIBUTION
+TARGET = 0: 24712 records (98.321%)
+TARGET = 1: 422 records (1.679%)
+Class imbalance ratio (majority/minority): 58.56:1
+
+3. CHECKING MISSING VALUES (BEFORE CLEANING)
+ID: 0
+GENDER: 0
+CAR: 0
+REALITY: 0
+NO_OF_CHILD: 0
+FAMILY_TYPE: 0
+HOUSE_TYPE: 0
+FLAG_MOBIL: 0
+WORK_PHONE: 0
+PHONE: 0
+E_MAIL: 0
+FAMILY SIZE: 1
+BEGIN_MONTH: 0
+AGE: 0
+YEARS_EMPLOYED: 9
+TARGET: 0
+INCOME: 0
+INCOME_TYPE: 12
+EDUCATION_TYPE: 0
+
+4. DATA PRE-PROCESSING PERFORMED
+- Missing categorical values filled with mode.
+- Missing numerical values filled with median.
+- Duplicate rows removed.
+- Outliers capped using the IQR method.
+- New features created: TOTAL_CONTACTS, HAS_CAR, HAS_PROPERTY, INCOME_BAND, INCOME_PER_PERSON, CHILD_RATIO.
+- Clean analysis file saved.
+- Model-ready base file saved with redundant/non-predictive columns removed.
+- Encoded model-ready file saved for machine learning.
+
+5. MODEL-READY COLUMN CHANGES
+- Dropped from model dataset: ID
+- Dropped from model dataset: E_MAIL
+- Dropped from model dataset: CAR
+- Dropped from model dataset: REALITY
+- Dropped from model dataset: INCOME_BAND
+
+6. TRAIN TEST SPLIT
+X_train shape: (20107, 31)
+X_test shape: (5027, 31)
+y_train shape: (20107,)
+y_test shape: (5027,)
+Training target distribution (%):
+  TARGET = 0: 98.319%
+  TARGET = 1: 1.681%
+Test target distribution (%):
+  TARGET = 0: 98.329%
+  TARGET = 1: 1.671%
+
+7. DATA NORMALIZATION
+- MinMaxScaler fitted on training data only.
+- Number of normalized feature columns: 13
+- Scaler saved to: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/minmax_scaler.pkl
+
+8. NUMERICAL MEAN VALUES BY TARGET
+        NO_OF_CHILD  FAMILY SIZE  BEGIN_MONTH        AGE  YEARS_EMPLOYED         INCOME  TOTAL_CONTACTS  INCOME_PER_PERSON  CHILD_RATIO
+TARGET                                                                                                                                 
+0          0.498685     2.281645    25.990167  40.552303        6.934789  187951.626922        0.660792       96855.729781     0.152927
+1          0.490521     2.236967    33.758294  39.959716        5.516588  192408.462085        0.697867      101613.582938     0.154265
+
+9. CORRELATION WITH TARGET
+TARGET               1.000000
+BEGIN_MONTH          0.060713
+ID                   0.020687
+INCOME_PER_PERSON    0.010592
+INCOME               0.007242
+TOTAL_CONTACTS       0.006117
+WORK_PHONE           0.005869
+PHONE                0.003023
+CHILD_RATIO          0.000821
+HAS_CAR              0.000274
+NO_OF_CHILD         -0.001448
+FAMILY SIZE         -0.006405
+AGE                 -0.007958
+HAS_PROPERTY        -0.021743
+YEARS_EMPLOYED      -0.033087
+E_MAIL                    NaN
+
+10. OUTPUT FILES CREATED
+- Clean analysis dataset: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/Final_Cleaned_Credit_Card_Dataset.csv
+- Model-ready base dataset: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/Model_Ready_Base_Credit_Card_Dataset.csv
+- Model-ready encoded dataset: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/Model_Ready_Encoded_Credit_Card_Dataset.csv
+- X_train: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/X_train.csv
+- X_test: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/X_test.csv
+- y_train: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/y_train.csv
+- y_test: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/y_test.csv
+- X_train_normalized: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/X_train_normalized.csv
+- X_test_normalized: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/data/processed/splits/X_test_normalized.csv
+- EDA report: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/reports/data_preprocessing/eda_report.txt
+- Charts folder: /Users/dchandana/Desktop/MSc/CMP_Assignment/Project/Credit_Card-Client_Prediction_System/reports/data_preprocessing/charts

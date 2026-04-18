@@ -1,0 +1,3 @@
+Model,Best_Params,Best_CV_F1
+Improved Logistic Regression,"{'C': 0.01, 'class_weight': 'balanced', 'l1_ratio': 0.0, 'max_iter': 2000, 'solver': 'liblinear'}",0.6756199290744126
+Improved ANN,"{'activation': 'tanh', 'alpha': 0.0001, 'early_stopping': True, 'hidden_layer_sizes': (256, 128), 'learning_rate_init': 0.001, 'max_iter': 1000, 'n_iter_no_change': 10, 'random_state': 42, 'validation_fraction': 0.1}",0.9801652111203559
