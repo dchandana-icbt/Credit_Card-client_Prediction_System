@@ -20,9 +20,9 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.neural_network import MLPClassifier
 
-# =========================================================
+# ==========================================================
 # SETTINGS
-# =========================================================
+# ==========================================================
 project_root = Path(__file__).resolve().parent.parent.parent
 
 SPLITS_DIR = project_root / "data" / "processed" / "splits"
