@@ -37,9 +37,9 @@ y_test_file = SPLITS_DIR / "y_test.csv"
 
 sns.set(style="whitegrid")
 
-# =========================================================
+# ==========================================================
 # LOAD DATA
-# =========================================================
+# ==========================================================
 X_train = pd.read_csv(X_train_norm_file)
 X_test = pd.read_csv(X_test_norm_file)
 y_train = pd.read_csv(y_train_file).squeeze("columns").astype(int)
