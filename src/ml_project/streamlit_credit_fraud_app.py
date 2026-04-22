@@ -371,9 +371,9 @@ with eda_tab:
         target_percent = (eda_df["TARGET"].value_counts(normalize=True).sort_index() * 100) if "TARGET" in eda_df.columns else pd.Series(dtype=float)
 
         sub_a, sub_b, sub_c = st.tabs([
-            "a) Fundamental Data Understanding",
-            "b) Data Preprocessing",
-            "c) Statistics and Visualisation",
+            "Fundamental Data Understanding",
+            "Data Preprocessing",
+            "Statistics and Visualisation",
         ])
 
         with sub_a:
