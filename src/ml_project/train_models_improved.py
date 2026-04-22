@@ -225,9 +225,9 @@ log_coefficients = pd.DataFrame({
 }).sort_values(by="Coefficient", key=abs, ascending=False)
 log_coefficients.to_csv(OUTPUT_DIR / "logistic_regression_coefficients.csv", index=False)
 
-# =========================================================
+# ==========================================================
 # 2. IMPROVED ANN
-# =========================================================
+# ==========================================================
 ann_grid = {
     "hidden_layer_sizes": [(64,), (128,), (128, 64), (200,), (256, 128)],
     "activation": ["relu", "tanh"],
