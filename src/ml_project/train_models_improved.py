@@ -62,9 +62,9 @@ print("X_train_smote shape:", X_train_smote.shape)
 print("y_train_smote distribution:")
 print(pd.Series(y_train_smote).value_counts())
 
-# =========================================================
+# ==========================================================
 # HELPERS
-# =========================================================
+# ==========================================================
 def find_best_threshold(y_true, y_proba, metric="f1"):
     precision, recall, thresholds = precision_recall_curve(y_true, y_proba)
 
